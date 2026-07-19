@@ -189,7 +189,7 @@ class NotificationDispatcher:
                 proxy_url=proxy_url,
                 mode=mode,
                 account_label=account_label,
-                batch_size=self.config.get("FEISHU_BATCH_SIZE", 29000),
+                batch_size=self.config.get("FEISHU_BATCH_SIZE", 18500),
                 batch_interval=self.config.get("BATCH_SEND_INTERVAL", 1.0),
                 split_content_func=self.split_content_func,
                 get_time_func=self.get_time_func,

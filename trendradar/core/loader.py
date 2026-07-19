@@ -87,7 +87,7 @@ def _load_notification_config(config_data: Dict) -> Dict:
         "ENABLE_NOTIFICATION": enable_notification_env if enable_notification_env is not None else notification.get("enable_notification", True),
         "MESSAGE_BATCH_SIZE": notification.get("message_batch_size", 4000),
         "DINGTALK_BATCH_SIZE": notification.get("dingtalk_batch_size", 20000),
-        "FEISHU_BATCH_SIZE": notification.get("feishu_batch_size", 29000),
+        "FEISHU_BATCH_SIZE": notification.get("feishu_batch_size", 18500),
         "BARK_BATCH_SIZE": notification.get("bark_batch_size", 3600),
         "SLACK_BATCH_SIZE": notification.get("slack_batch_size", 4000),
         "BATCH_SEND_INTERVAL": notification.get("batch_send_interval", 1.0),

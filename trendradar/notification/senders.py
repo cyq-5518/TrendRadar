@@ -68,7 +68,7 @@ def send_to_feishu(
     mode: str = "daily",
     account_label: str = "",
     *,
-    batch_size: int = 29000,
+    batch_size: int = 18500,  # interactive 卡片限制 20KB，预留 JSON 结构开销
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
     get_time_func: Callable = None,
@@ -117,18 +117,26 @@ def send_to_feishu(
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
+        # 飞书自定义机器人不支持 <font> 标签，去除并用 markdown 渲染
+        batch_content = re.sub(r'</?font[^>]*>', '', batch_content)
+
         content_size = len(batch_content.encode("utf-8"))
         print(
             f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
         )
 
-        # 飞书自定义机器人 text 类型不支持 <font> 标签，去除之
-        batch_content = re.sub(r'</?font[^>]*>', '', batch_content)
-
         payload = {
-            "msg_type": "text",
-            "content": {
-                "text": batch_content,
+            "msg_type": "interactive",
+            "card": {
+                "body": {
+                    "direction": "vertical",
+                    "elements": [
+                        {
+                            "tag": "markdown",
+                            "content": batch_content,
+                        }
+                    ],
+                }
             },
         }
 

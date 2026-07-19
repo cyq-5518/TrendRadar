@@ -355,7 +355,7 @@ class AppContext:
             mode=mode,
             batch_sizes={
                 "dingtalk": self.config.get("DINGTALK_BATCH_SIZE", 20000),
-                "feishu": self.config.get("FEISHU_BATCH_SIZE", 29000),
+                "feishu": self.config.get("FEISHU_BATCH_SIZE", 18500),
                 "default": self.config.get("MESSAGE_BATCH_SIZE", 4000),
             },
             feishu_separator=self.config.get("FEISHU_MESSAGE_SEPARATOR", "---"),
