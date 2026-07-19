@@ -4,6 +4,24 @@ OpenAI
 Claude
 AGI
 大模型
+月之暗面
+Kimi
+WorkBuddy
+豆包
+文心一言
+通义千问
+智谱
+ChatGLM
+讯飞星火
+混元
+百川
+MiniMax
+零一万物
+Copilot
+Gemini
+Midjourney
+Llama
+Stable Diffusion
 
 英伟达
 芯片
