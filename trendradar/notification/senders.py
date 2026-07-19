@@ -15,6 +15,7 @@
 每个发送函数都支持分批发送，并通过参数化配置实现与 CONFIG 的解耦。
 """
 
+import re
 import smtplib
 import time
 from datetime import datetime
@@ -120,6 +121,9 @@ def send_to_feishu(
         print(
             f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
         )
+
+        # 飞书自定义机器人 text 类型不支持 <font> 标签，去除之
+        batch_content = re.sub(r'</?font[^>]*>', '', batch_content)
 
         payload = {
             "msg_type": "text",
