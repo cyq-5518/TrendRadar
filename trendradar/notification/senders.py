@@ -121,17 +121,9 @@ def send_to_feishu(
             f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
         )
 
-        total_titles = sum(
-            len(stat["titles"]) for stat in report_data["stats"] if stat["count"] > 0
-        )
-        now = get_time_func() if get_time_func else datetime.now()
-
         payload = {
             "msg_type": "text",
             "content": {
-                "total_titles": total_titles,
-                "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
-                "report_type": report_type,
                 "text": batch_content,
             },
         }
