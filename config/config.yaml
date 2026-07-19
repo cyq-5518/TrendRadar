@@ -20,7 +20,7 @@ storage:
   # 数据格式选项
   formats:
     sqlite: true       # 主存储（必须启用）
-    txt: false         # 是否生成 TXT 快照
+    txt: true          # 是否生成 TXT 快照
     html: true         # 是否生成 HTML 报告（⚠️ 邮件推送必须设为 true，否则会报错）
 
   # 本地存储配置

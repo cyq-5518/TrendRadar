@@ -167,6 +167,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html output/index.html
-          git diff --staged --quiet || git commit -m "自动更新 HTML 报告 [skip ci]"
+          git add index.html output/index.html output/*/txt/
+          git diff --staged --quiet || git commit -m "自动更新报告 [skip ci]"
           git push origin master
