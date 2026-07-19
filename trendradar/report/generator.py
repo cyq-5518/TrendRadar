@@ -20,6 +20,7 @@ def prepare_report_data(
     rank_threshold: int = 3,
     matches_word_groups_func: Optional[Callable] = None,
     load_frequency_words_func: Optional[Callable] = None,
+    all_results: Optional[Dict] = None,
 ) -> Dict:
     """
     准备报告数据
@@ -127,6 +128,55 @@ def prepare_report_data(
             }
         )
 
+    # 构建全量新闻列表（按排名排序）
+    all_news = []
+    if all_results and id_to_name:
+        for source_id, titles_dict in all_results.items():
+            source_name = id_to_name.get(source_id, source_id)
+            for title, title_data in titles_dict.items():
+                ranks = title_data.get("ranks", [])
+                if not ranks:
+                    continue
+                best_rank = min(ranks)
+                all_news.append({
+                    "title": title,
+                    "source_name": source_name,
+                    "url": title_data.get("url", ""),
+                    "mobile_url": title_data.get("mobileUrl", ""),
+                    "best_rank": best_rank,
+                })
+        all_news.sort(key=lambda x: x["best_rank"])
+
+    # 提取高频推荐词（2-4字中文词组，排除已有关键词）
+    recommendations = []
+    if all_results:
+        from collections import Counter
+        import re
+        all_keywords = set()
+        for stat in stats:
+            for title_data in stat.get("titles", []):
+                for w in title_data.get("title", ""):
+                    all_keywords.add(title_data.get("title", ""))
+        word_counter = Counter()
+        for source_titles in all_results.values():
+            for title in source_titles.keys():
+                # 提取2-4字中文词组
+                chinese_words = re.findall(r'[一-鿿]{2,4}', title)
+                for w in chinese_words:
+                    word_counter[w] += 1
+        # 排除单字、纯数字、已有关键词组中的词
+        existing_kw = set()
+        if load_frequency_words_func:
+            wgs, _, _ = load_frequency_words_func()
+            for wg in wgs:
+                for kw in wg.get("words", []):
+                    existing_kw.add(kw)
+        for word, count in word_counter.most_common(50):
+            if word not in existing_kw and count >= 2:
+                recommendations.append({"word": word, "count": count})
+            if len(recommendations) >= 10:
+                break
+
     return {
         "stats": processed_stats,
         "new_titles": processed_new_titles,
@@ -134,6 +184,8 @@ def prepare_report_data(
         "total_new_count": sum(
             len(source["titles"]) for source in processed_new_titles
         ),
+        "all_news": all_news,
+        "recommendations": recommendations,
     }
 
 
@@ -154,6 +206,7 @@ def generate_html_report(
     matches_word_groups_func: Optional[Callable] = None,
     load_frequency_words_func: Optional[Callable] = None,
     enable_index_copy: bool = True,
+    all_results: Optional[Dict] = None,
 ) -> str:
     """
     生成 HTML 报告
@@ -204,6 +257,7 @@ def generate_html_report(
         rank_threshold,
         matches_word_groups_func,
         load_frequency_words_func,
+        all_results,
     )
 
     # 渲染 HTML 内容

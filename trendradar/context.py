@@ -265,6 +265,7 @@ class AppContext:
         mode: str = "daily",
         is_daily_summary: bool = False,
         update_info: Optional[Dict] = None,
+        all_results: Optional[Dict] = None,
     ) -> str:
         """生成HTML报告"""
         return generate_html_report(
@@ -276,6 +277,7 @@ class AppContext:
             mode=mode,
             is_daily_summary=is_daily_summary,
             update_info=update_info,
+            all_results=all_results,
             rank_threshold=self.rank_threshold,
             output_dir="output",
             date_folder=self.format_date(),

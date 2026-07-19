@@ -332,6 +332,7 @@ class NewsAnalyzer:
                 mode=mode,
                 is_daily_summary=is_daily_summary,
                 update_info=self.update_info if self.ctx.config["SHOW_VERSION_UPDATE"] else None,
+                all_results=data_source,
             )
 
         return stats, html_file

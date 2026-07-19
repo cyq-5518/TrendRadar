@@ -464,6 +464,24 @@ def render_html_content(
                     width: 100%;
                 }
             }
+            /* ── 全量热点 & 推荐 ── */
+            .all-news-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e5e7eb; }
+            .all-news-title { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px 0; }
+            .all-news-subtitle { font-size: 12px; color: #999; margin: 0 0 20px 0; }
+            .all-news-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+            .all-news-rank { min-width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+            .all-news-rank.top { background: #dc2626; }
+            .all-news-rank.high { background: #ea580c; }
+            .all-news-rank.normal { background: #9ca3af; }
+            .all-news-source { font-size: 11px; color: #999; min-width: 56px; flex-shrink: 0; }
+            .all-news-title-link { flex: 1; min-width: 0; font-size: 14px; color: #1a1a1a; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .all-news-title-link:hover { color: #4f46e5; }
+            .recommend-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e5e7eb; }
+            .recommend-title { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px 0; }
+            .recommend-subtitle { font-size: 12px; color: #999; margin: 0 0 16px 0; }
+            .recommend-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+            .recommend-tag { display: inline-block; padding: 6px 14px; background: #f3f4f6; border-radius: 20px; font-size: 13px; color: #4f46e5; font-weight: 500; }
+            .recommend-tag .tag-count { color: #9ca3af; font-size: 11px; margin-left: 4px; }
         </style>
     </head>
     <body>
@@ -713,6 +731,56 @@ def render_html_content(
     else:
         # 默认：热点词汇统计在前，新增热点在后
         html += stats_html + new_titles_html
+
+    # ── 全量热点 TOP 30 ──
+    all_news = report_data.get("all_news", [])
+    if all_news:
+        top_n = all_news[:30]
+        platform_count = len(set(n["source_name"] for n in all_news))
+        html += f"""
+                <div class="all-news-section">
+                    <div class="all-news-title">📡 全量热点 TOP 30</div>
+                    <div class="all-news-subtitle">今日共抓取 {len(all_news)} 条新闻，来自 {platform_count} 个平台，以下是排名最靠前的热点</div>"""
+        for item in top_n:
+            rank = item["best_rank"]
+            if rank <= 3:
+                rank_class = "top"
+            elif rank <= 5:
+                rank_class = "high"
+            else:
+                rank_class = "normal"
+            escaped_title = html_escape(item["title"])
+            escaped_source = html_escape(item["source_name"])
+            link_url = item.get("mobile_url") or item.get("url", "")
+            if link_url:
+                escaped_url = html_escape(link_url)
+                title_html = f'<a href="{escaped_url}" target="_blank" class="all-news-title-link">{escaped_title}</a>'
+            else:
+                title_html = f'<span class="all-news-title-link">{escaped_title}</span>'
+            html += f"""
+                    <div class="all-news-item">
+                        <div class="all-news-rank {rank_class}">{rank}</div>
+                        <div class="all-news-source">{escaped_source}</div>
+                        {title_html}
+                    </div>"""
+        html += """
+                </div>"""
+
+    # ── 你可能感兴趣 ──
+    recommendations = report_data.get("recommendations", [])
+    if recommendations:
+        html += """
+                <div class="recommend-section">
+                    <div class="recommend-title">💡 你可能感兴趣</div>
+                    <div class="recommend-subtitle">全量新闻中的高频词汇，不在你当前关键词列表里</div>
+                    <div class="recommend-tags">"""
+        for rec in recommendations:
+            escaped_word = html_escape(rec["word"])
+            html += f"""
+                        <span class="recommend-tag">{escaped_word}<span class="tag-count">({rec['count']})</span></span>"""
+        html += """
+                    </div>
+                </div>"""
 
     html += """
             </div>
