@@ -125,9 +125,21 @@ def send_to_feishu(
             f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
         )
 
+        header_title = f"TrendRadar · {report_type}"
+        if len(batches) > 1:
+            header_title += f" ({i}/{len(batches)})"
+
         payload = {
             "msg_type": "interactive",
             "card": {
+                "schema": "2.0",
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": header_title,
+                    },
+                    "template": "blue",
+                },
                 "body": {
                     "direction": "vertical",
                     "elements": [
@@ -136,7 +148,7 @@ def send_to_feishu(
                             "content": batch_content,
                         }
                     ],
-                }
+                },
             },
         }
 
