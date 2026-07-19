@@ -29,6 +29,7 @@ def split_content_into_batches(
     batch_sizes: Optional[Dict[str, int]] = None,
     feishu_separator: str = "---",
     reverse_content_order: bool = False,
+    report_url: str = "",
     get_time_func: Optional[Callable[[], datetime]] = None,
 ) -> List[str]:
     """分批处理消息内容，确保词组标题+至少第一条新闻的完整性
@@ -101,6 +102,8 @@ def split_content_into_batches(
         base_footer = f"\n\n<font color='grey'>更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}</font>"
         if update_info:
             base_footer += f"\n<font color='grey'>TrendRadar 发现新版本 {update_info['remote_version']}，当前 {update_info['current_version']}</font>"
+        if report_url:
+            base_footer += f"\n\n📄 [查看完整报告]({report_url})"
     elif format_type == "dingtalk":
         base_footer = f"\n\n> 更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}"
         if update_info:

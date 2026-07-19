@@ -80,6 +80,7 @@ report:
   reverse_content_order: false # 内容顺序：false=热点词汇统计在前，true=新增热点新闻在前
 
 notification:
+  report_url: "https://cyq-5518.github.io/TrendRadar/" # HTML 报告链接（如 GitHub Pages 地址），留空则不显示
   enable_notification: true # 是否启用通知功能，如果 false，则不发送手机通知
   message_batch_size: 4000 # 消息分批大小（字节）(这个配置别动)
   dingtalk_batch_size: 20000 # 钉钉消息分批大小（字节）(这个配置也别动)

@@ -360,6 +360,7 @@ class AppContext:
             },
             feishu_separator=self.config.get("FEISHU_MESSAGE_SEPARATOR", "---"),
             reverse_content_order=self.config.get("REVERSE_CONTENT_ORDER", False),
+            report_url=self.config.get("REPORT_URL", ""),
             get_time_func=self.get_time,
         )
 

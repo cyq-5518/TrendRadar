@@ -93,6 +93,7 @@ def _load_notification_config(config_data: Dict) -> Dict:
         "BATCH_SEND_INTERVAL": notification.get("batch_send_interval", 1.0),
         "FEISHU_MESSAGE_SEPARATOR": notification.get("feishu_message_separator", "---"),
         "MAX_ACCOUNTS_PER_CHANNEL": _get_env_int("MAX_ACCOUNTS_PER_CHANNEL") or notification.get("max_accounts_per_channel", 3),
+        "REPORT_URL": notification.get("report_url", ""),
     }
 
 
