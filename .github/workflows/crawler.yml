@@ -169,4 +169,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html output/index.html output/*/txt/
           git diff --staged --quiet || git commit -m "自动更新报告 [skip ci]"
+          git pull --rebase origin master
           git push origin master
