@@ -109,6 +109,8 @@ def build_topics(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         examples = sorted(topic_items, key=lambda item: (item["date"], item["source"]))[:3]
         topics.append({
             "name": phrase,
+            "indexes": set(fresh),
+            "all_indexes": set(indexes),
             "count": len(topic_items),
             "days": len(days),
             "sources": len(sources),
@@ -118,7 +120,37 @@ def build_topics(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         used.update(fresh)
         if len(topics) == 10:
             break
-    return topics
+
+    # Merge labels that repeatedly occur in the same source titles.  For example,
+    # “世界杯”, “西班牙” and “阿根廷” should be one story rather than three alerts.
+    merged: list[dict[str, Any]] = []
+    for topic in topics:
+        parent = next(
+            (
+                current for current in merged
+                if len(topic["all_indexes"] & current["all_indexes"])
+                >= max(3, min(len(topic["all_indexes"]), len(current["all_indexes"])) * 0.4)
+            ),
+            None,
+        )
+        if parent is None:
+            merged.append(topic)
+        else:
+            parent["indexes"].update(topic["indexes"])
+            parent["all_indexes"].update(topic["all_indexes"])
+
+    for topic in merged:
+        topic_items = [items[index] for index in sorted(topic["indexes"])]
+        days = {item["date"] for item in topic_items}
+        sources = {item["source"] for item in topic_items}
+        topic.update({
+            "count": len(topic_items),
+            "days": len(days),
+            "sources": len(sources),
+            "examples": sorted(topic_items, key=lambda item: (item["date"], item["source"]))[:3],
+            "must_watch": len(days) >= 3 or (len(sources) >= 5 and len(topic_items) >= 8),
+        })
+    return merged
 
 
 def report_markdown(end: date, items: list[dict[str, Any]], topics: list[dict[str, Any]], report_url: str) -> str:
@@ -193,6 +225,13 @@ def post_json(url: str, payload: dict) -> bool:
         return False
 
 
+def format_feishu_markdown(text: str) -> str:
+    """Use the same card-Markdown dialect as the daily Feishu notification."""
+    formatted = re.sub(r"^###?\s+(.+)$", r"**\1**", text, flags=re.MULTILINE)
+    formatted = re.sub(r"^#\s+(.+)$", r"**\1**", formatted, flags=re.MULTILINE)
+    return formatted
+
+
 def send_notifications(config: dict, text: str, html_path: Path) -> None:
     if not config.get("notification", {}).get("enable_notification", True):
         print("通知功能已禁用，跳过周报推送")
@@ -200,7 +239,20 @@ def send_notifications(config: dict, text: str, html_path: Path) -> None:
     summary = text[:3500]
     feishu = config_value(config, "FEISHU_WEBHOOK_URL", "notification", "webhooks", "feishu_url")
     for url in filter(None, feishu.split(";")):
-        post_json(url.strip(), {"msg_type": "text", "content": {"text": summary}})
+        post_json(url.strip(), {
+            "msg_type": "interactive",
+            "card": {
+                "schema": "2.0",
+                "header": {
+                    "title": {"tag": "plain_text", "content": "TrendRadar · 一周资讯报告"},
+                    "template": "blue",
+                },
+                "body": {
+                    "direction": "vertical",
+                    "elements": [{"tag": "markdown", "content": format_feishu_markdown(summary)}],
+                },
+            },
+        })
     dingtalk = config_value(config, "DINGTALK_WEBHOOK_URL", "notification", "webhooks", "dingtalk_url")
     for url in filter(None, dingtalk.split(";")):
         post_json(url.strip(), {"msgtype": "markdown", "markdown": {"title": "TrendRadar 一周资讯报告", "text": summary}})
