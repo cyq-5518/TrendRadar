@@ -29,13 +29,24 @@ OUTPUT_DIR = ROOT / "output"
 SHANGHAI = timezone(timedelta(hours=8), name="Asia/Shanghai")
 TITLE_LINE = re.compile(r"^\d+\.\s*(.*?)(?:\s+\[URL:([^\]]+)\])?(?:\s+\[MOBILE:[^\]]+\])?$")
 CHINESE_CHUNK = re.compile(r"[\u4e00-\u9fff]{2,}")
+# These expressions describe how a headline is phrased, rather than what it is
+# about.  Remove them before producing phrase candidates so their overlapping
+# windows (for example, ``何看待`` from ``如何看待``) cannot become topics.
+TITLE_TEMPLATES = re.compile(
+    r"如何看待|怎么[样么]?看待|怎样看待|你怎么看|如何评价|怎么评价|"
+    r"为何|为什么|如何|是否|有哪些|有什么"
+)
 STOP_PHRASES = {
     "今天", "最新", "回应", "发布", "宣布", "表示", "事件", "相关", "我们", "中国",
     "美国", "网友", "官方", "记者", "新闻", "视频", "情况", "正在", "已经", "可能",
     "热搜", "热点", "一周", "本周", "全球", "市场", "公司", "平台", "地区", "时间",
     "为什么", "如何看", "上半年", "有什么", "怎么样", "这一次", "这些", "一个", "是否",
-    "近日", "目前", "关注的", "值得关", "怎么看", "怎么办",
+    "近日", "目前", "关注的", "值得关", "怎么看", "怎么办", "何看待",
+    # Degree/scope modifiers are useful inside a title but are not subjects.
+    "大规模", "大范围", "全方位", "进一步", "越来越", "多方面", "高质量",
 }
+
+GENERIC_SUFFIXES = ("来看", "来说", "而言", "方面", "程度", "规模", "范围")
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,15 +83,38 @@ def read_snapshots(end: date) -> list[dict[str, Any]]:
 
 def title_phrases(title: str) -> set[str]:
     phrases: set[str] = set()
-    for chunk in CHINESE_CHUNK.findall(title):
-        # Three- and four-character phrases avoid generic two-character words
-        # such as “什么” and “如何”, which otherwise dominate a weekly ranking.
-        for size in (3, 4):
+    cleaned = TITLE_TEMPLATES.sub(" ", title)
+    for chunk in CHINESE_CHUNK.findall(cleaned):
+        # Include longer candidates so a complete entity such as “宇树科技”
+        # can beat its mechanically truncated three-character windows.
+        for size in range(3, min(8, len(chunk)) + 1):
             for start in range(max(0, len(chunk) - size + 1)):
                 phrase = chunk[start : start + size]
-                if phrase not in STOP_PHRASES:
+                if phrase not in STOP_PHRASES and not phrase.endswith(GENERIC_SUFFIXES):
                     phrases.add(phrase)
     return phrases
+
+
+def prune_truncated_candidates(
+    candidates: list[tuple[float, str, set[int]]],
+) -> list[tuple[float, str, set[int]]]:
+    """Drop a short window when a longer phrase explains the same headlines."""
+    kept: list[tuple[float, str, set[int]]] = []
+    by_phrase = {phrase: indexes for _, phrase, indexes in candidates}
+    for candidate in candidates:
+        _, phrase, indexes = candidate
+        superseded = False
+        for longer, longer_indexes in by_phrase.items():
+            if len(longer) <= len(phrase) or phrase not in longer:
+                continue
+            overlap = len(indexes & longer_indexes)
+            # Require both strong coverage and enough independent evidence.
+            if overlap >= 3 and overlap / len(indexes) >= 0.8:
+                superseded = True
+                break
+        if not superseded:
+            kept.append(candidate)
+    return kept
 
 
 def build_topics(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -94,8 +128,12 @@ def build_topics(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         days = {items[index]["date"] for index in indexes}
         sources = {items[index]["source"] for index in indexes}
         if len(indexes) >= 3 and (len(days) >= 2 or len(sources) >= 3):
-            score = len(indexes) + len(days) * 3 + len(sources) * 2
+            # A small specificity bonus resolves equal-frequency candidates in
+            # favour of complete names without allowing rare long text to win.
+            score = len(indexes) + len(days) * 3 + len(sources) * 2 + len(phrase) * 0.15
             candidates.append((score, phrase, indexes))
+
+    candidates = prune_truncated_candidates(candidates)
 
     topics: list[dict[str, Any]] = []
     used: set[int] = set()
